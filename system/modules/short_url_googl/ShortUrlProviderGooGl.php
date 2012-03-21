@@ -21,7 +21,7 @@
  * Software Foundation website at <http://www.gnu.org/licenses/>.
  *
  * PHP version 5
- * @copyright  Leo Unglaub 2012
+ * @copyright  Leo Unglaub 2012, MEN AT WORK 2012
  * @author     Leo Unglaub <leo@leo-unglaub.net>
  * @package    short_url_googl
  * @license    LGPL
@@ -40,12 +40,28 @@ class ShortUrlProviderGooGl extends ShortUrlAbstract
 	 */
 	public $intExpires = 30758400;
 
+        /**
+	 * Import some needet libraries
+	 * 
+	 * @param void
+	 * @return void
+	 */
+	public function __construct()
+	{
+		$this->import('Database');
+		parent::__construct();
+	}
 
 	/**
 	 * @see ShortUrlAbstract
 	 */
 	public function getShortUrl($strLongUrl)
 	{
+                global $objPage;
+
+                $objResult = $this->Database->prepare('SELECT surl_googl_apikey as apikey FROM tl_page WHERE id = ?')->limit(1)->execute($objPage->rootId);  
+                $url = 'https://www.googleapis.com/urlshortener/v1/url'.(($objResult->apikey == '') ? '' : '?key='.$objResult->apikey) ;
+                
 		$arrData = array
 		(
 			'longUrl' => $strLongUrl
@@ -57,10 +73,7 @@ class ShortUrlProviderGooGl extends ShortUrlAbstract
 		$objRequest->setHeader('Content-Type', 'application/json');
 		$objRequest->data = json_encode($arrData);
 		$objRequest->method = 'POST';
-
-		$objRequest->send('https://www.googleapis.com/urlshortener/v1/url');
-
-
+		$objRequest->send($url);
 		// check if everything went right
 		if (!$objRequest->hasError())
 		{
